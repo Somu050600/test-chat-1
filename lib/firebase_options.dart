@@ -10,6 +10,14 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
+  /// Web OAuth client ID (from Firebase Console → Authentication → Google → Web client).
+  /// Replace after `flutterfire configure` or set via `--dart-define=GOOGLE_WEB_CLIENT_ID=...`.
+  static String? get webClientId {
+    const fromEnv = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    return null; // Use meta tag / google-services when configured.
+  }
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
