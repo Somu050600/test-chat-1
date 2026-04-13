@@ -8,7 +8,7 @@ class DefaultFirebaseOptions {
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError('Android Firebase options not configured yet.');
+        return android;
       case TargetPlatform.iOS:
         throw UnsupportedError('iOS Firebase options not configured yet.');
       case TargetPlatform.macOS:
@@ -21,6 +21,14 @@ class DefaultFirebaseOptions {
         throw UnsupportedError('Fuchsia Firebase options not configured yet.');
     }
   }
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyBvteurx4VMN3fkgzgX2TNJA7-5Oyjbxvw',
+    appId: '1:579497868233:android:44fff04c0d286e2d844618',
+    messagingSenderId: '579497868233',
+    projectId: 'test-chat-1-ef221',
+    storageBucket: 'test-chat-1-ef221.firebasestorage.app',
+  );
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyAnYqf18SvrvKTdQV-5XUTG2T-bDYQp1E4',

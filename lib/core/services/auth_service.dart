@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../models/user_model.dart';
@@ -7,6 +8,7 @@ import '../../models/user_model.dart';
 class AuthService {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  GoogleSignIn? _googleSignIn;
 
   AuthService({
     FirebaseAuth? auth,
@@ -19,14 +21,24 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   Future<UserCredential?> signInWithGoogle() async {
-    final googleSignIn = GoogleSignIn.instance;
-    await googleSignIn.initialize();
+    late UserCredential userCredential;
 
-    final account = await googleSignIn.authenticate();
-    final idToken = account.authentication.idToken;
+    if (kIsWeb) {
+      final provider = GoogleAuthProvider();
+      userCredential = await _auth.signInWithPopup(provider);
+    } else {
+      if (_googleSignIn == null) {
+        _googleSignIn = GoogleSignIn.instance;
+        await _googleSignIn!.initialize(
+          clientId: '579497868233-d1f6gsolt27p489loa8tir83jb7o6b8t.apps.googleusercontent.com',
+        );
+      }
+      final account = await _googleSignIn!.authenticate();
+      final idToken = account.authentication.idToken;
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      userCredential = await _auth.signInWithCredential(credential);
+    }
 
-    final credential = GoogleAuthProvider.credential(idToken: idToken);
-    final userCredential = await _auth.signInWithCredential(credential);
     await _saveUserToFirestore(userCredential.user!);
     return userCredential;
   }
@@ -51,7 +63,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await GoogleSignIn.instance.signOut();
+    if (!kIsWeb) await _googleSignIn?.signOut();
     await _auth.signOut();
   }
 }

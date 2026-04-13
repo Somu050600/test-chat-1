@@ -27,7 +27,9 @@ class NotificationService {
 
   Future<void> _saveFcmToken(String userId) async {
     try {
-      final token = await _messaging.getToken();
+      final token = await _messaging.getToken(
+        vapidKey: 'BE3Vs562H7kNqdGUv44Eo7Iu8hCtESpSKQkvgMvxbsUaE-pqKWkTHoqTWK7e67ZUay8R1fU6DBlUjaPwATwIkv8',
+      );
       if (token != null) {
         await _firestore
             .collection('users')
@@ -59,7 +61,9 @@ class NotificationService {
 
   Future<void> deleteToken(String userId) async {
     try {
-      final token = await _messaging.getToken();
+      final token = await _messaging.getToken(
+        vapidKey: 'BE3Vs562H7kNqdGUv44Eo7Iu8hCtESpSKQkvgMvxbsUaE-pqKWkTHoqTWK7e67ZUay8R1fU6DBlUjaPwATwIkv8',
+      );
       if (token != null) {
         await _firestore
             .collection('users')
