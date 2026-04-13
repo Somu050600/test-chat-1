@@ -23,7 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authServiceProvider).signInWithGoogle();
     } catch (e) {
-      print('Sign-in error: $e');  // temporary
+      debugPrint('Sign-in error: $e');
       if (mounted) {
         setState(() => _error = 'Sign-in failed. Please try again.');
       }
