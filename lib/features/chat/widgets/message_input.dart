@@ -40,14 +40,24 @@ class _MessageInputState extends State<MessageInput> {
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (!kIsWeb) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey != LogicalKeyboardKey.enter) {
+      return KeyEventResult.ignored;
+    }
 
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.enter &&
-        !HardwareKeyboard.instance.isShiftPressed) {
-      _handleSend();
+    if (HardwareKeyboard.instance.isShiftPressed) {
+      final text = _controller.text;
+      final selection = _controller.selection;
+      final newText = text.replaceRange(selection.start, selection.end, '\n');
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: selection.start + 1),
+      );
       return KeyEventResult.handled;
     }
-    return KeyEventResult.ignored;
+
+    _handleSend();
+    return KeyEventResult.handled;
   }
 
   @override
