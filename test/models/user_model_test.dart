@@ -4,7 +4,7 @@ import 'package:chat_app/models/user_model.dart';
 
 void main() {
   group('UserModel', () {
-    test('fromMap creates correct model', () {
+    test('fromMap creates correct model with isOnline', () {
       final now = DateTime(2024, 1, 1);
       final map = {
         'uid': 'test-uid',
@@ -13,6 +13,7 @@ void main() {
         'photoUrl': 'https://example.com/photo.jpg',
         'createdAt': Timestamp.fromDate(now),
         'lastSeen': Timestamp.fromDate(now),
+        'isOnline': true,
       };
 
       final user = UserModel.fromMap(map);
@@ -23,9 +24,10 @@ void main() {
       expect(user.photoUrl, 'https://example.com/photo.jpg');
       expect(user.createdAt, now);
       expect(user.lastSeen, now);
+      expect(user.isOnline, isTrue);
     });
 
-    test('toMap produces correct map', () {
+    test('toMap includes isOnline', () {
       final now = DateTime(2024, 1, 1);
       final user = UserModel(
         uid: 'test-uid',
@@ -34,23 +36,66 @@ void main() {
         photoUrl: '',
         createdAt: now,
         lastSeen: now,
+        isOnline: true,
       );
 
       final map = user.toMap();
 
       expect(map['uid'], 'test-uid');
-      expect(map['name'], 'Test User');
-      expect(map['email'], 'test@example.com');
+      expect(map['isOnline'], isTrue);
       expect(map['createdAt'], isA<Timestamp>());
     });
 
-    test('fromMap handles missing fields with defaults', () {
+    test('fromMap defaults isOnline to false', () {
       final user = UserModel.fromMap({});
 
       expect(user.uid, '');
       expect(user.name, '');
-      expect(user.email, '');
-      expect(user.photoUrl, '');
+      expect(user.isOnline, isFalse);
+    });
+
+    test('isRecentlyOnline returns true when online', () {
+      final user = UserModel(
+        uid: 'uid1',
+        name: 'Name',
+        email: 'e@t.com',
+        photoUrl: '',
+        createdAt: DateTime.now(),
+        lastSeen: DateTime.now(),
+        isOnline: true,
+      );
+
+      expect(user.isRecentlyOnline, isTrue);
+      expect(user.presenceText, 'Online');
+    });
+
+    test('isRecentlyOnline returns true when lastSeen < 30s ago', () {
+      final user = UserModel(
+        uid: 'uid1',
+        name: 'Name',
+        email: 'e@t.com',
+        photoUrl: '',
+        createdAt: DateTime.now(),
+        lastSeen: DateTime.now().subtract(const Duration(seconds: 10)),
+        isOnline: false,
+      );
+
+      expect(user.isRecentlyOnline, isTrue);
+    });
+
+    test('isRecentlyOnline returns false when lastSeen > 30s ago', () {
+      final user = UserModel(
+        uid: 'uid1',
+        name: 'Name',
+        email: 'e@t.com',
+        photoUrl: '',
+        createdAt: DateTime.now(),
+        lastSeen: DateTime.now().subtract(const Duration(minutes: 5)),
+        isOnline: false,
+      );
+
+      expect(user.isRecentlyOnline, isFalse);
+      expect(user.presenceText, 'Last seen 5m ago');
     });
 
     test('copyWith creates new instance with updated fields', () {
@@ -63,11 +108,11 @@ void main() {
         lastSeen: DateTime(2024, 1, 1),
       );
 
-      final updated = user.copyWith(name: 'New Name');
+      final updated = user.copyWith(name: 'New Name', isOnline: true);
 
       expect(updated.name, 'New Name');
       expect(updated.uid, 'uid1');
-      expect(updated.email, 'email@test.com');
+      expect(updated.isOnline, isTrue);
     });
   });
 }

@@ -123,6 +123,14 @@ class ChatService {
     return UserModel.fromMap(doc.data()!);
   }
 
+  Stream<UserModel?> userStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null);
+  }
+
   Stream<List<UserModel>> searchUsers(String currentUserId) {
     return _firestore
         .collection('users')

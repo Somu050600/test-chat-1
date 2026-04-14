@@ -63,7 +63,37 @@ class AuthService {
     }
   }
 
+  Future<void> setOnlineStatus(bool online) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    final update = <String, dynamic>{
+      'isOnline': online,
+    };
+    if (!online) {
+      update['lastSeen'] = FieldValue.serverTimestamp();
+    }
+    try {
+      await _firestore.collection('users').doc(user.uid).update(update);
+    } catch (e) {
+      // Silently fail — user doc may not exist yet
+    }
+  }
+
+  Future<void> updateLastSeen() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'lastSeen': FieldValue.serverTimestamp(),
+        'isOnline': false,
+      });
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
   Future<void> signOut() async {
+    await updateLastSeen();
     if (!kIsWeb) await _googleSignIn?.signOut();
     await _auth.signOut();
   }

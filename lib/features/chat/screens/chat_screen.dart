@@ -200,9 +200,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final convo = convos.where((c) => c.id == widget.conversationId);
         if (convo.isEmpty) return const Text('Chat');
         final otherUid = convo.first.otherMember(currentUser?.uid ?? '');
-        final userAsync = ref.watch(userProvider(otherUid));
+        final userAsync = ref.watch(userStreamProvider(otherUid));
         return userAsync.when(
-          data: (user) => Text(user?.name ?? 'Chat'),
+          data: (user) {
+            if (user == null) return const Text('Chat');
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user.name, style: const TextStyle(fontSize: 16)),
+                Text(
+                  user.presenceText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: user.isRecentlyOnline
+                        ? Colors.green
+                        : Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant,
+                  ),
+                ),
+              ],
+            );
+          },
           loading: () => const Text('Loading...'),
           error: (e, s) => const Text('Chat'),
         );
