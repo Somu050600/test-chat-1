@@ -12,7 +12,7 @@ void main() {
   });
 
   group('ChatService', () {
-    test('getOrCreateConversation creates new conversation', () async {
+    test('getOrCreateConversation creates with membersMap', () async {
       final id = await chatService.getOrCreateConversation('uid1', 'uid2');
 
       expect(id, isNotEmpty);
@@ -21,6 +21,7 @@ void main() {
           await fakeFirestore.collection('conversations').doc(id).get();
       expect(doc.exists, isTrue);
       expect(doc.data()!['members'], ['uid1', 'uid2']);
+      expect(doc.data()!['membersMap'], {'uid1': true, 'uid2': true});
     });
 
     test('getOrCreateConversation returns existing conversation', () async {
@@ -30,7 +31,7 @@ void main() {
       expect(first, second);
     });
 
-    test('sendMessage adds document and updates conversation', () async {
+    test('sendMessage adds document with server timestamp fields', () async {
       final convoId =
           await chatService.getOrCreateConversation('uid1', 'uid2');
 
@@ -46,8 +47,12 @@ void main() {
           .collection('messages')
           .get();
       expect(messages.docs, hasLength(1));
-      expect(messages.docs.first.data()['text'], 'Hello!');
-      expect(messages.docs.first.data()['senderId'], 'uid1');
+
+      final data = messages.docs.first.data();
+      expect(data['text'], 'Hello!');
+      expect(data['senderId'], 'uid1');
+      expect(data['status'], 'sent');
+      expect(data['clientTimestamp'], isNotNull);
 
       final convo =
           await fakeFirestore.collection('conversations').doc(convoId).get();
@@ -73,23 +78,67 @@ void main() {
       expect(user, isNull);
     });
 
-    test('getConversations streams conversations for user', () async {
+    test('getConversations streams conversations via membersMap', () async {
       await fakeFirestore.collection('conversations').add({
         'members': ['uid1', 'uid2'],
+        'membersMap': {'uid1': true, 'uid2': true},
         'lastMessage': 'Hi',
         'updatedAt': DateTime.now(),
       });
       await fakeFirestore.collection('conversations').add({
         'members': ['uid3', 'uid4'],
+        'membersMap': {'uid3': true, 'uid4': true},
         'lastMessage': 'Bye',
         'updatedAt': DateTime.now(),
       });
 
-      final convos =
-          await chatService.getConversations('uid1').first;
+      final convos = await chatService.getConversations('uid1').first;
 
       expect(convos, hasLength(1));
       expect(convos.first.members, contains('uid1'));
+    });
+
+    test('markMessagesAsDelivered updates sent to delivered', () async {
+      final convoId =
+          await chatService.getOrCreateConversation('uid1', 'uid2');
+
+      await fakeFirestore
+          .collection('conversations')
+          .doc(convoId)
+          .collection('messages')
+          .add({
+        'senderId': 'uid1',
+        'text': 'Hello',
+        'status': 'sent',
+      });
+
+      await chatService.markMessagesAsDelivered(convoId, 'uid2');
+
+      final msgs = await fakeFirestore
+          .collection('conversations')
+          .doc(convoId)
+          .collection('messages')
+          .get();
+      expect(msgs.docs.first.data()['status'], 'delivered');
+    });
+
+    test('markMessagesAsRead updates sent and delivered to read', () async {
+      final convoId =
+          await chatService.getOrCreateConversation('uid1', 'uid2');
+      final ref = fakeFirestore
+          .collection('conversations')
+          .doc(convoId)
+          .collection('messages');
+
+      await ref.add({'senderId': 'uid1', 'text': 'A', 'status': 'sent'});
+      await ref.add({'senderId': 'uid1', 'text': 'B', 'status': 'delivered'});
+
+      await chatService.markMessagesAsRead(convoId, 'uid2');
+
+      final msgs = await ref.get();
+      for (final doc in msgs.docs) {
+        expect(doc.data()['status'], 'read');
+      }
     });
   });
 }

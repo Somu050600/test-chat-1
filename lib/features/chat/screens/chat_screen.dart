@@ -19,11 +19,66 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _markedAsRead = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  final List<MessageModel> _olderMessages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMore) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    final messages = ref.read(messagesProvider(widget.conversationId)).value;
+    if (messages == null || messages.isEmpty) return;
+
+    final allMessages = [...messages, ..._olderMessages];
+    final lastMsg = allMessages.last;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final chatService = ref.read(chatServiceProvider);
+      final doc = await chatService.getMessageDocument(
+          widget.conversationId, lastMsg.id);
+      if (doc == null) {
+        setState(() {
+          _hasMore = false;
+          _isLoadingMore = false;
+        });
+        return;
+      }
+
+      final older = await chatService.loadMoreMessages(
+        widget.conversationId,
+        lastDocument: doc,
+      );
+
+      setState(() {
+        _olderMessages.addAll(older);
+        _hasMore = older.length >= 30;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
   }
 
   void _markAsRead() {
@@ -59,8 +114,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           Expanded(
             child: messagesAsync.when(
-              data: (messages) {
-                if (messages.isEmpty) {
+              data: (recentMessages) {
+                final allMessages = [...recentMessages, ..._olderMessages];
+                if (allMessages.isEmpty) {
                   return Center(
                     child: Text(
                       'No messages yet.\nSend the first one!',
@@ -71,7 +127,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   );
                 }
-                final hasUnread = messages.any(
+                final hasUnread = recentMessages.any(
                   (m) =>
                       m.senderId != currentUser?.uid &&
                       m.status != MessageStatus.read,
@@ -91,9 +147,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   reverse: true,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8),
-                  itemCount: messages.length,
+                  itemCount: allMessages.length + (_hasMore ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final message = messages[index];
+                    if (index == allMessages.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    }
+                    final message = allMessages[index];
                     final isMe = message.senderId == currentUser?.uid;
                     return MessageBubble(
                       message: message,

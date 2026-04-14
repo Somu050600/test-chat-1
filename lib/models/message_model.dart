@@ -7,6 +7,7 @@ class MessageModel {
   final String senderId;
   final String text;
   final DateTime createdAt;
+  final DateTime clientTimestamp;
   final MessageStatus status;
 
   const MessageModel({
@@ -14,15 +15,21 @@ class MessageModel {
     required this.senderId,
     required this.text,
     required this.createdAt,
+    required this.clientTimestamp,
     required this.status,
   });
 
   factory MessageModel.fromMap(String id, Map<String, dynamic> map) {
+    final serverTime = (map['createdAt'] as Timestamp?)?.toDate();
+    final clientTime = (map['clientTimestamp'] as Timestamp?)?.toDate();
+    final fallback = clientTime ?? DateTime.now();
+
     return MessageModel(
       id: id,
       senderId: map['senderId'] as String? ?? '',
       text: map['text'] as String? ?? '',
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: serverTime ?? fallback,
+      clientTimestamp: clientTime ?? DateTime.now(),
       status: MessageStatus.values.firstWhere(
         (s) => s.name == (map['status'] as String? ?? 'sent'),
         orElse: () => MessageStatus.sent,
@@ -34,7 +41,8 @@ class MessageModel {
     return {
       'senderId': senderId,
       'text': text,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': Timestamp.fromDate(clientTimestamp),
       'status': status.name,
     };
   }
