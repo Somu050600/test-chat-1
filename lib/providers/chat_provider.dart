@@ -24,6 +24,11 @@ final userProvider =
   return ref.watch(chatServiceProvider).getUser(userId);
 });
 
+final userStreamProvider =
+    StreamProvider.family<UserModel?, String>((ref, userId) {
+  return ref.watch(chatServiceProvider).userStream(userId);
+});
+
 final allUsersProvider = StreamProvider<List<UserModel>>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return Stream.value([]);

@@ -4,10 +4,11 @@ import 'package:chat_app/models/conversation_model.dart';
 
 void main() {
   group('ConversationModel', () {
-    test('fromMap creates correct model', () {
+    test('fromMap creates correct model with membersMap', () {
       final now = DateTime(2024, 1, 1);
       final map = {
         'members': ['uid1', 'uid2'],
+        'membersMap': {'uid1': true, 'uid2': true},
         'lastMessage': 'Hello!',
         'updatedAt': Timestamp.fromDate(now),
       };
@@ -16,14 +17,28 @@ void main() {
 
       expect(convo.id, 'convo-id');
       expect(convo.members, ['uid1', 'uid2']);
+      expect(convo.membersMap, {'uid1': true, 'uid2': true});
       expect(convo.lastMessage, 'Hello!');
       expect(convo.updatedAt, now);
     });
 
-    test('toMap produces correct map', () {
+    test('fromMap generates membersMap from members array if missing', () {
+      final map = {
+        'members': ['uid1', 'uid2'],
+        'lastMessage': 'Hi',
+        'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
+      };
+
+      final convo = ConversationModel.fromMap('id', map);
+
+      expect(convo.membersMap, {'uid1': true, 'uid2': true});
+    });
+
+    test('toMap includes both members and membersMap', () {
       final convo = ConversationModel(
         id: 'id',
         members: ['uid1', 'uid2'],
+        membersMap: {'uid1': true, 'uid2': true},
         lastMessage: 'Hi',
         updatedAt: DateTime(2024, 1, 1),
       );
@@ -31,6 +46,7 @@ void main() {
       final map = convo.toMap();
 
       expect(map['members'], ['uid1', 'uid2']);
+      expect(map['membersMap'], {'uid1': true, 'uid2': true});
       expect(map['lastMessage'], 'Hi');
     });
 
@@ -38,6 +54,7 @@ void main() {
       final convo = ConversationModel(
         id: 'id',
         members: ['uid1', 'uid2'],
+        membersMap: {'uid1': true, 'uid2': true},
         lastMessage: '',
         updatedAt: DateTime.now(),
       );
@@ -50,6 +67,7 @@ void main() {
       final convo = ConversationModel.fromMap('id', {});
 
       expect(convo.members, isEmpty);
+      expect(convo.membersMap, isEmpty);
       expect(convo.lastMessage, '');
     });
   });

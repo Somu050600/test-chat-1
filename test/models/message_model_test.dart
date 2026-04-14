@@ -4,12 +4,14 @@ import 'package:chat_app/models/message_model.dart';
 
 void main() {
   group('MessageModel', () {
-    test('fromMap creates correct model', () {
-      final now = DateTime(2024, 1, 1);
+    test('fromMap creates correct model with server and client timestamps', () {
+      final serverTime = DateTime(2024, 1, 1, 12, 0);
+      final clientTime = DateTime(2024, 1, 1, 11, 59);
       final map = {
         'senderId': 'uid1',
         'text': 'Hello!',
-        'createdAt': Timestamp.fromDate(now),
+        'createdAt': Timestamp.fromDate(serverTime),
+        'clientTimestamp': Timestamp.fromDate(clientTime),
         'status': 'sent',
       };
 
@@ -18,16 +20,33 @@ void main() {
       expect(message.id, 'msg-id');
       expect(message.senderId, 'uid1');
       expect(message.text, 'Hello!');
-      expect(message.createdAt, now);
+      expect(message.createdAt, serverTime);
+      expect(message.clientTimestamp, clientTime);
       expect(message.status, MessageStatus.sent);
     });
 
-    test('toMap produces correct map', () {
+    test('fromMap falls back to clientTimestamp when createdAt is null', () {
+      final clientTime = DateTime(2024, 1, 1, 12, 0);
+      final map = {
+        'senderId': 'uid1',
+        'text': 'Hello!',
+        'createdAt': null,
+        'clientTimestamp': Timestamp.fromDate(clientTime),
+        'status': 'sent',
+      };
+
+      final message = MessageModel.fromMap('id', map);
+      expect(message.createdAt, clientTime);
+    });
+
+    test('toMap uses FieldValue.serverTimestamp for createdAt', () {
+      final now = DateTime(2024, 1, 1);
       final message = MessageModel(
         id: 'id',
         senderId: 'uid1',
         text: 'Hi',
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: now,
+        clientTimestamp: now,
         status: MessageStatus.read,
       );
 
@@ -36,6 +55,8 @@ void main() {
       expect(map['senderId'], 'uid1');
       expect(map['text'], 'Hi');
       expect(map['status'], 'read');
+      expect(map['createdAt'], isA<FieldValue>());
+      expect(map['clientTimestamp'], isA<Timestamp>());
     });
 
     test('fromMap handles unknown status', () {

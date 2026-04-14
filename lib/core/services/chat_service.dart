@@ -10,6 +10,12 @@ class ChatService {
   ChatService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  CollectionReference<Map<String, dynamic>> _messagesRef(String convoId) =>
+      _firestore
+          .collection('conversations')
+          .doc(convoId)
+          .collection('messages');
+
   Stream<List<ConversationModel>> getConversations(String userId) {
     return _firestore
         .collection('conversations')
@@ -23,12 +29,9 @@ class ChatService {
 
   Stream<List<MessageModel>> getMessages(
     String conversationId, {
-    int limit = 50,
+    int limit = 30,
   }) {
-    return _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
+    return _messagesRef(conversationId)
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()
@@ -37,34 +40,51 @@ class ChatService {
             .toList());
   }
 
+  Future<List<MessageModel>> loadMoreMessages(
+    String conversationId, {
+    required DocumentSnapshot lastDocument,
+    int limit = 30,
+  }) async {
+    final snapshot = await _messagesRef(conversationId)
+        .orderBy('createdAt', descending: true)
+        .startAfterDocument(lastDocument)
+        .limit(limit)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => MessageModel.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  Future<DocumentSnapshot?> getMessageDocument(
+      String conversationId, String messageId) async {
+    final doc = await _messagesRef(conversationId).doc(messageId).get();
+    return doc.exists ? doc : null;
+  }
+
   Future<void> sendMessage({
     required String conversationId,
     required String senderId,
     required String text,
   }) async {
     final now = DateTime.now();
-    final message = MessageModel(
-      id: '',
-      senderId: senderId,
-      text: text,
-      createdAt: now,
-      status: MessageStatus.sent,
-    );
 
     final batch = _firestore.batch();
 
-    final msgRef = _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
-        .doc();
-    batch.set(msgRef, message.toMap());
+    final msgRef = _messagesRef(conversationId).doc();
+    batch.set(msgRef, {
+      'senderId': senderId,
+      'text': text,
+      'createdAt': FieldValue.serverTimestamp(),
+      'clientTimestamp': Timestamp.fromDate(now),
+      'status': MessageStatus.sent.name,
+    });
 
     final convoRef =
         _firestore.collection('conversations').doc(conversationId);
     batch.update(convoRef, {
       'lastMessage': text,
-      'updatedAt': Timestamp.fromDate(now),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
 
     await batch.commit();
@@ -84,14 +104,15 @@ class ChatService {
       }
     }
 
-    final newConvo = await _firestore.collection('conversations').add(
-      ConversationModel(
-        id: '',
-        members: [currentUserId, otherUserId],
-        lastMessage: '',
-        updatedAt: DateTime.now(),
-      ).toMap(),
-    );
+    final members = [currentUserId, otherUserId];
+    final membersMap = {currentUserId: true, otherUserId: true};
+
+    final newConvo = await _firestore.collection('conversations').add({
+      'members': members,
+      'membersMap': membersMap,
+      'lastMessage': '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     return newConvo.id;
   }
@@ -100,6 +121,14 @@ class ChatService {
     final doc = await _firestore.collection('users').doc(userId).get();
     if (!doc.exists) return null;
     return UserModel.fromMap(doc.data()!);
+  }
+
+  Stream<UserModel?> userStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null);
   }
 
   Stream<List<UserModel>> searchUsers(String currentUserId) {
@@ -113,10 +142,7 @@ class ChatService {
 
   Future<void> markMessagesAsDelivered(
       String conversationId, String currentUserId) async {
-    final snapshot = await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
+    final snapshot = await _messagesRef(conversationId)
         .where('status', isEqualTo: 'sent')
         .get();
 
@@ -131,16 +157,10 @@ class ChatService {
 
   Future<void> markMessagesAsRead(
       String conversationId, String currentUserId) async {
-    final sent = await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
+    final sent = await _messagesRef(conversationId)
         .where('status', isEqualTo: 'sent')
         .get();
-    final delivered = await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
+    final delivered = await _messagesRef(conversationId)
         .where('status', isEqualTo: 'delivered')
         .get();
 

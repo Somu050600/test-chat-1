@@ -7,6 +7,7 @@ class UserModel {
   final String photoUrl;
   final DateTime createdAt;
   final DateTime lastSeen;
+  final bool isOnline;
 
   const UserModel({
     required this.uid,
@@ -15,6 +16,7 @@ class UserModel {
     required this.photoUrl,
     required this.createdAt,
     required this.lastSeen,
+    this.isOnline = false,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -25,6 +27,7 @@ class UserModel {
       photoUrl: map['photoUrl'] as String? ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastSeen: (map['lastSeen'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isOnline: map['isOnline'] as bool? ?? false,
     );
   }
 
@@ -36,7 +39,22 @@ class UserModel {
       'photoUrl': photoUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastSeen': Timestamp.fromDate(lastSeen),
+      'isOnline': isOnline,
     };
+  }
+
+  bool get isRecentlyOnline {
+    if (isOnline) return true;
+    return DateTime.now().difference(lastSeen).inSeconds < 30;
+  }
+
+  String get presenceText {
+    if (isRecentlyOnline) return 'Online';
+    final diff = DateTime.now().difference(lastSeen);
+    if (diff.inMinutes < 1) return 'Last seen just now';
+    if (diff.inMinutes < 60) return 'Last seen ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Last seen ${diff.inHours}h ago';
+    return 'Last seen ${diff.inDays}d ago';
   }
 
   UserModel copyWith({
@@ -46,6 +64,7 @@ class UserModel {
     String? photoUrl,
     DateTime? createdAt,
     DateTime? lastSeen,
+    bool? isOnline,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -54,6 +73,7 @@ class UserModel {
       photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,
       lastSeen: lastSeen ?? this.lastSeen,
+      isOnline: isOnline ?? this.isOnline,
     );
   }
 }

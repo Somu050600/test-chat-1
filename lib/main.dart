@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_constants.dart';
 import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
 import 'routes/app_router.dart';
 
 @pragma('vm:entry-point')
@@ -19,11 +20,51 @@ Future<void> main() async {
   runApp(const ProviderScope(child: ChatApp()));
 }
 
-class ChatApp extends ConsumerWidget {
+class ChatApp extends ConsumerStatefulWidget {
   const ChatApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatApp> createState() => _ChatAppState();
+}
+
+class _ChatAppState extends ConsumerState<ChatApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _setOnline();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _setOnline();
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        _setOffline();
+      default:
+        break;
+    }
+  }
+
+  void _setOnline() {
+    ref.read(authServiceProvider).setOnlineStatus(true);
+  }
+
+  void _setOffline() {
+    ref.read(authServiceProvider).updateLastSeen();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
