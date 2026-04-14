@@ -111,19 +111,44 @@ class ChatService {
             snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList());
   }
 
-  Future<void> markMessagesAsRead(
+  Future<void> markMessagesAsDelivered(
       String conversationId, String currentUserId) async {
-    final unread = await _firestore
+    final snapshot = await _firestore
         .collection('conversations')
         .doc(conversationId)
         .collection('messages')
-        .where('senderId', isNotEqualTo: currentUserId)
         .where('status', isEqualTo: 'sent')
         .get();
 
     final batch = _firestore.batch();
-    for (final doc in unread.docs) {
-      batch.update(doc.reference, {'status': 'read'});
+    for (final doc in snapshot.docs) {
+      if (doc.data()['senderId'] != currentUserId) {
+        batch.update(doc.reference, {'status': 'delivered'});
+      }
+    }
+    await batch.commit();
+  }
+
+  Future<void> markMessagesAsRead(
+      String conversationId, String currentUserId) async {
+    final sent = await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .where('status', isEqualTo: 'sent')
+        .get();
+    final delivered = await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .where('status', isEqualTo: 'delivered')
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in [...sent.docs, ...delivered.docs]) {
+      if (doc.data()['senderId'] != currentUserId) {
+        batch.update(doc.reference, {'status': 'read'});
+      }
     }
     await batch.commit();
   }

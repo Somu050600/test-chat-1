@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../models/conversation_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/notification_provider.dart';
@@ -25,6 +26,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.read(currentUserProvider);
     if (user != null) {
       await ref.read(notificationServiceProvider).initialize(user.uid);
+    }
+  }
+
+  void _markAllAsDelivered(List<ConversationModel> conversations, String? uid) {
+    if (uid == null) return;
+    final chatService = ref.read(chatServiceProvider);
+    for (final convo in conversations) {
+      chatService.markMessagesAsDelivered(convo.id, uid);
     }
   }
 
@@ -52,6 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: conversations.when(
         data: (list) {
+          _markAllAsDelivered(list, user?.uid);
           if (list.isEmpty) {
             return Center(
               child: Column(

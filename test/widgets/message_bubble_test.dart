@@ -44,7 +44,27 @@ void main() {
       expect(find.byIcon(Icons.done_all), findsNothing);
     });
 
-    testWidgets('renders read status with done_all icon', (tester) async {
+    testWidgets('shows double check gray for delivered', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: MessageBubble(
+            message: MessageModel(
+              id: 'msg1',
+              senderId: 'uid1',
+              text: 'Delivered msg',
+              createdAt: DateTime(2024, 1, 1, 12, 30),
+              status: MessageStatus.delivered,
+            ),
+            isMe: true,
+          ),
+        ),
+      ));
+      expect(find.byIcon(Icons.done_all), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.done_all));
+      expect(icon.color, isNot(Colors.blue.shade200));
+    });
+
+    testWidgets('shows double check blue for read', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: MessageBubble(
@@ -60,6 +80,8 @@ void main() {
         ),
       ));
       expect(find.byIcon(Icons.done_all), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.done_all));
+      expect(icon.color, Colors.blue.shade200);
     });
   });
 }

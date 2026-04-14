@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../models/message_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../widgets/message_bubble.dart';
@@ -17,11 +18,22 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool _markedAsRead = false;
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _markAsRead() {
+    if (_markedAsRead) return;
+    _markedAsRead = true;
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+    ref
+        .read(chatServiceProvider)
+        .markMessagesAsRead(widget.conversationId, user.uid);
   }
 
   void _scrollToBottom() {
@@ -58,6 +70,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
                     ),
                   );
+                }
+                final hasUnread = messages.any(
+                  (m) =>
+                      m.senderId != currentUser?.uid &&
+                      m.status != MessageStatus.read,
+                );
+                if (hasUnread) {
+                  _markedAsRead = false;
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _markAsRead());
+                } else if (!_markedAsRead) {
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _markAsRead());
                 }
                 WidgetsBinding.instance
                     .addPostFrameCallback((_) => _scrollToBottom());
