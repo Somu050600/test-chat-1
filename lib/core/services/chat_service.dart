@@ -117,13 +117,14 @@ class ChatService {
         .collection('conversations')
         .doc(conversationId)
         .collection('messages')
-        .where('senderId', isNotEqualTo: currentUserId)
         .where('status', isEqualTo: 'sent')
         .get();
 
     final batch = _firestore.batch();
     for (final doc in unread.docs) {
-      batch.update(doc.reference, {'status': 'read'});
+      if (doc.data()['senderId'] != currentUserId) {
+        batch.update(doc.reference, {'status': 'read'});
+      }
     }
     await batch.commit();
   }

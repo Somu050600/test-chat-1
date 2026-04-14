@@ -105,3 +105,5 @@ See `firestore.rules` for the complete ruleset.
 ## Cloud Functions
 
 `functions/index.js` contains a Firestore trigger that sends FCM push notifications to the recipient when a new message is created.
+
+> **Note:** Cloud Functions require the Firebase **Blaze (pay-as-you-go)** plan. On the free Spark plan, push notifications will not work. The rest of the app (auth, chat, read receipts) works on the free plan.
