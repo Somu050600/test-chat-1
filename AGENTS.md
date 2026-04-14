@@ -19,8 +19,8 @@ This is a Flutter (Dart) cross-platform application scaffolded with `flutter cre
 | Install/update deps | `flutter pub get` |
 | Lint / static analysis | `flutter analyze` |
 | Run tests | `flutter test` |
-| Run web dev server | `flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0` |
-| Build web release | `flutter build web` |
+| Run web dev server | `flutter run -d web-server --web-port=8080 --web-hostname=0.0.0.0 --dart-define-from-file=.env` |
+| Build web release | `flutter build web --dart-define-from-file=.env` |
 
 ### Caveats
 
