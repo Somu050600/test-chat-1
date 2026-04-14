@@ -19,7 +19,7 @@ class ChatService {
   Stream<List<ConversationModel>> getConversations(String userId) {
     return _firestore
         .collection('conversations')
-        .where('membersMap.$userId', isEqualTo: true)
+        .where('members', arrayContains: userId)
         .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -94,12 +94,12 @@ class ChatService {
       String currentUserId, String otherUserId) async {
     final query = await _firestore
         .collection('conversations')
-        .where('membersMap.$currentUserId', isEqualTo: true)
+        .where('members', arrayContains: currentUserId)
         .get();
 
     for (final doc in query.docs) {
-      final membersMap = Map<String, dynamic>.from(doc.data()['membersMap'] ?? {});
-      if (membersMap.containsKey(otherUserId) && membersMap.length == 2) {
+      final members = List<String>.from(doc.data()['members'] ?? []);
+      if (members.contains(otherUserId) && members.length == 2) {
         return doc.id;
       }
     }

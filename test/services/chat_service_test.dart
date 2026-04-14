@@ -78,7 +78,7 @@ void main() {
       expect(user, isNull);
     });
 
-    test('getConversations streams conversations via membersMap', () async {
+    test('getConversations streams conversations for user', () async {
       await fakeFirestore.collection('conversations').add({
         'members': ['uid1', 'uid2'],
         'membersMap': {'uid1': true, 'uid2': true},
