@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class MessageInput extends StatefulWidget {
   final Future<void> Function(String text) onSend;
@@ -11,11 +13,13 @@ class MessageInput extends StatefulWidget {
 
 class _MessageInputState extends State<MessageInput> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
   bool _isSending = false;
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -31,6 +35,29 @@ class _MessageInputState extends State<MessageInput> {
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
+    _focusNode.requestFocus();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (!kIsWeb) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey != LogicalKeyboardKey.enter) {
+      return KeyEventResult.ignored;
+    }
+
+    if (HardwareKeyboard.instance.isShiftPressed) {
+      final text = _controller.text;
+      final selection = _controller.selection;
+      final newText = text.replaceRange(selection.start, selection.end, '\n');
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: selection.start + 1),
+      );
+      return KeyEventResult.handled;
+    }
+
+    _handleSend();
+    return KeyEventResult.handled;
   }
 
   @override
@@ -53,25 +80,30 @@ class _MessageInputState extends State<MessageInput> {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _controller,
-              textCapitalization: TextCapitalization.sentences,
-              maxLines: 4,
-              minLines: 1,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+            child: Focus(
+              onKeyEvent: _handleKeyEvent,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                textCapitalization: TextCapitalization.sentences,
+                maxLines: 4,
+                minLines: 1,
+                textInputAction:
+                    kIsWeb ? TextInputAction.none : TextInputAction.newline,
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
               ),
-              onSubmitted: (_) => _handleSend(),
             ),
           ),
           const SizedBox(width: 8),
