@@ -74,7 +74,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final hasUnread = messages.any(
                   (m) =>
                       m.senderId != currentUser?.uid &&
-                      m.status == MessageStatus.sent,
+                      m.status != MessageStatus.read,
                 );
                 if (hasUnread) {
                   _markedAsRead = false;
