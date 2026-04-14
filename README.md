@@ -46,7 +46,6 @@ lib/
 
 - Flutter SDK 3.x
 - Firebase project with Auth, Firestore, and Cloud Messaging enabled
-- `flutterfire` CLI configured
 
 ### Install dependencies
 
@@ -54,24 +53,38 @@ lib/
 flutter pub get
 ```
 
+### Environment configuration
+
+All Firebase keys and secrets are loaded from a `.env` file via `--dart-define-from-file`.
+
+1. Copy the template:
+   ```bash
+   cp .env.example .env
+   ```
+2. Fill in your Firebase project values in `.env`
+
+> **`.env` is git-ignored.** Never commit it. Share `.env.example` instead.
+
 ### Firebase setup
 
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 2. Enable Google Sign-In in Authentication
 3. Create a Firestore database
-4. Run `flutterfire configure` to generate `firebase_options.dart`
-5. Deploy Firestore rules: `firebase deploy --only firestore:rules`
-6. Deploy indexes: `firebase deploy --only firestore:indexes`
-7. Deploy Cloud Functions: `cd functions && npm install && firebase deploy --only functions`
+4. Deploy Firestore rules: `firebase deploy --only firestore:rules`
+5. Deploy indexes: `firebase deploy --only firestore:indexes`
+6. Deploy Cloud Functions: `cd functions && npm install && firebase deploy --only functions`
 
 ### Run
 
 ```bash
 # Web
-flutter run -d web-server --web-port=8080
+flutter run -d web-server --web-port=8080 --dart-define-from-file=.env
 
-# Android/iOS
-flutter run
+# Android
+flutter run --dart-define-from-file=.env
+
+# Build web release
+flutter build web --dart-define-from-file=.env
 ```
 
 ### Test

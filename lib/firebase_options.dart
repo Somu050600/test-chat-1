@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
+import 'core/constants/env.dart';
+
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) return web;
@@ -23,20 +25,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBvteurx4VMN3fkgzgX2TNJA7-5Oyjbxvw',
-    appId: '1:579497868233:android:44fff04c0d286e2d844618',
-    messagingSenderId: '579497868233',
-    projectId: 'test-chat-1-ef221',
-    storageBucket: 'test-chat-1-ef221.firebasestorage.app',
+    apiKey: Env.firebaseAndroidApiKey,
+    appId: Env.firebaseAndroidAppId,
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    projectId: Env.firebaseProjectId,
+    storageBucket: Env.firebaseStorageBucket,
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAnYqf18SvrvKTdQV-5XUTG2T-bDYQp1E4',
-    authDomain: 'test-chat-1-ef221.firebaseapp.com',
-    projectId: 'test-chat-1-ef221',
-    storageBucket: 'test-chat-1-ef221.firebasestorage.app',
-    messagingSenderId: '579497868233',
-    appId: '1:579497868233:web:1531e99e9e170893844618',
-    measurementId: 'G-1EJVRWF64F',
+    apiKey: Env.firebaseWebApiKey,
+    authDomain: Env.firebaseWebAuthDomain,
+    projectId: Env.firebaseProjectId,
+    storageBucket: Env.firebaseStorageBucket,
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    appId: Env.firebaseWebAppId,
+    measurementId: Env.firebaseWebMeasurementId,
   );
 }

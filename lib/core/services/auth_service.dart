@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../models/user_model.dart';
+import '../constants/env.dart';
 
 class AuthService {
   final FirebaseAuth _auth;
@@ -30,7 +31,7 @@ class AuthService {
       if (_googleSignIn == null) {
         _googleSignIn = GoogleSignIn.instance;
         await _googleSignIn!.initialize(
-          clientId: '579497868233-d1f6gsolt27p489loa8tir83jb7o6b8t.apps.googleusercontent.com',
+          clientId: Env.googleSignInClientId,
         );
       }
       final account = await _googleSignIn!.authenticate();

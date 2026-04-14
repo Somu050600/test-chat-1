@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
+import '../constants/env.dart';
+
 class NotificationService {
   final FirebaseMessaging _messaging;
   final FirebaseFirestore _firestore;
@@ -28,7 +30,7 @@ class NotificationService {
   Future<void> _saveFcmToken(String userId) async {
     try {
       final token = await _messaging.getToken(
-        vapidKey: 'BE3Vs562H7kNqdGUv44Eo7Iu8hCtESpSKQkvgMvxbsUaE-pqKWkTHoqTWK7e67ZUay8R1fU6DBlUjaPwATwIkv8',
+        vapidKey: Env.fcmVapidKey.isNotEmpty ? Env.fcmVapidKey : null,
       );
       if (token != null) {
         await _firestore
@@ -62,7 +64,7 @@ class NotificationService {
   Future<void> deleteToken(String userId) async {
     try {
       final token = await _messaging.getToken(
-        vapidKey: 'BE3Vs562H7kNqdGUv44Eo7Iu8hCtESpSKQkvgMvxbsUaE-pqKWkTHoqTWK7e67ZUay8R1fU6DBlUjaPwATwIkv8',
+        vapidKey: Env.fcmVapidKey.isNotEmpty ? Env.fcmVapidKey : null,
       );
       if (token != null) {
         await _firestore
