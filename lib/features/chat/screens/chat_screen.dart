@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/message_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
+import '../../../providers/notification_provider.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 
@@ -180,6 +181,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onSend: (text) async {
               if (currentUser == null) return;
               await ref.read(chatServiceProvider).sendMessage(
+                    conversationId: widget.conversationId,
+                    senderId: currentUser.uid,
+                    text: text,
+                  );
+              ref.read(pushNotificationApiProvider).sendNotification(
                     conversationId: widget.conversationId,
                     senderId: currentUser.uid,
                     text: text,

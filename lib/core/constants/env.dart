@@ -26,4 +26,9 @@ class Env {
       String.fromEnvironment('GOOGLE_SIGN_IN_CLIENT_ID');
   static const fcmVapidKey =
       String.fromEnvironment('FCM_VAPID_KEY');
+
+  static const notifyApiUrl =
+      String.fromEnvironment('NOTIFY_API_URL');
+  static const notifyApiKey =
+      String.fromEnvironment('NOTIFY_API_KEY');
 }
