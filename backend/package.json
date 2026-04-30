@@ -1,0 +1,11 @@
+{
+  "name": "chat-app-notifications",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

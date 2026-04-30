@@ -102,8 +102,57 @@ Security rules enforce:
 
 See `firestore.rules` for the complete ruleset.
 
-## Cloud Functions
+## Push Notifications (Vercel Backend)
 
-`functions/index.js` contains a Firestore trigger that sends FCM push notifications to the recipient when a new message is created.
+Push notifications are sent via a lightweight Vercel serverless function at `backend/api/notify.js`. The Flutter app calls this endpoint after sending a message.
 
-> **Note:** Cloud Functions require the Firebase **Blaze (pay-as-you-go)** plan. On the free Spark plan, push notifications will not work. The rest of the app (auth, chat, read receipts) works on the free plan.
+### How it works
+
+```
+User sends message → Firestore write → Client calls POST /api/notify → Backend sends FCM → Recipient gets push
+```
+
+### Deploy to Vercel
+
+1. **Get a Firebase service account key:**
+   - Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+   - Save the JSON file
+
+2. **Install Vercel CLI:**
+   ```bash
+   npm install -g vercel
+   ```
+
+3. **Deploy:**
+   ```bash
+   cd backend
+   npm install
+   vercel
+   ```
+   Follow the prompts (link to your Vercel account, pick a project name).
+
+4. **Set environment variables in Vercel dashboard:**
+   - `FIREBASE_SERVICE_ACCOUNT` — paste the entire service account JSON as a single line
+   - `API_SECRET_KEY` — generate a random string (e.g., `openssl rand -hex 32`)
+
+5. **Note your deployment URL** (e.g., `https://chat-app-notifications.vercel.app`)
+
+6. **Update your Flutter `.env`:**
+   ```
+   NOTIFY_API_URL=https://your-project.vercel.app/api/notify
+   NOTIFY_API_KEY=<same API_SECRET_KEY from step 4>
+   ```
+
+7. **Rebuild and deploy the Flutter app:**
+   ```bash
+   flutter build web --dart-define-from-file=.env
+   firebase deploy --only hosting
+   ```
+
+### Alternative: Firebase Cloud Functions (Blaze plan)
+
+`functions/index.js` contains a Firestore trigger version that auto-fires on new messages. This requires the Blaze (pay-as-you-go) plan. If you upgrade later, deploy with:
+```bash
+cd functions && npm install && firebase deploy --only functions
+```
+Then remove the `NOTIFY_API_URL` from your `.env` to disable the client-side API call.
