@@ -2,9 +2,11 @@ const { initializeApp, cert, getApps } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
 
-if (getApps().length === 0) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  initializeApp({ credential: cert(serviceAccount) });
+function ensureFirebaseApp() {
+  if (getApps().length === 0) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    initializeApp({ credential: cert(serviceAccount) });
+  }
 }
 
 function setCorsHeaders(res) {
@@ -27,6 +29,8 @@ module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  ensureFirebaseApp();
 
   const authHeader = req.headers["x-api-key"];
   if (authHeader !== process.env.API_SECRET_KEY) {
