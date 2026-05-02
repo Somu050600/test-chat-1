@@ -109,8 +109,12 @@ Push notifications are sent via a lightweight Vercel serverless function at `bac
 ### How it works
 
 ```
-User sends message → Firestore write → Client calls POST /api/notify → Backend sends FCM → Recipient gets push
+User sends message → Firestore write → Client calls POST /api/notify with conversationId + messageId and Firebase ID token → Backend verifies token, loads message from Firestore, sends FCM → Recipient gets push
 ```
+
+The client does **not** send message text or sender id for the notify call; the server reads those from Firestore and checks the sender matches the verified ID token.
+
+Each conversation stores **`unreadCounts`** as a map of user id → integer. Sending a message increments the recipient’s count; opening the chat and marking messages read sets your count to **0**. Conversations created before this feature have no `unreadCounts` until the next message (or you can add `{ uidA: 0, uidB: 0 }` in the Firebase console for old docs).
 
 ### Deploy to Vercel
 
@@ -132,22 +136,25 @@ User sends message → Firestore write → Client calls POST /api/notify → Bac
    Follow the prompts (link to your Vercel account, pick a project name).
 
 4. **Set environment variables in Vercel dashboard:**
-   - `FIREBASE_SERVICE_ACCOUNT` — paste the entire service account JSON as a single line
-   - `API_SECRET_KEY` — generate a random string (e.g., `openssl rand -hex 32`)
+   - `FIREBASE_SERVICE_ACCOUNT` — paste the entire service account JSON as a single line (used for Admin SDK: verify ID tokens, Firestore, FCM)
 
 5. **Note your deployment URL** (e.g., `https://chat-app-notifications.vercel.app`)
 
 6. **Update your Flutter `.env`:**
    ```
    NOTIFY_API_URL=https://your-project.vercel.app/api/notify
-   NOTIFY_API_KEY=<same API_SECRET_KEY from step 4>
    ```
+   `NOTIFY_API_KEY` is no longer required; auth uses `Authorization: Bearer <Firebase ID token>`.
 
 7. **Rebuild and deploy the Flutter app:**
    ```bash
    flutter build web --dart-define-from-file=.env
    firebase deploy --only hosting
    ```
+
+### Open chat from a notification (deep link)
+
+FCM `data` includes `conversationId` (and `type: "chat"`). Tapping a notification uses `?fromNotification=1` so the chat scrolls to the **oldest unread** message once. Opening a chat from the home list goes straight to the latest messages.
 
 ### Alternative: Firebase Cloud Functions (Blaze plan)
 

@@ -22,6 +22,7 @@ void main() {
       expect(doc.exists, isTrue);
       expect(doc.data()!['members'], ['uid1', 'uid2']);
       expect(doc.data()!['membersMap'], {'uid1': true, 'uid2': true});
+      expect(doc.data()!['unreadCounts'], {'uid1': 0, 'uid2': 0});
     });
 
     test('getOrCreateConversation returns existing conversation', () async {
@@ -35,7 +36,7 @@ void main() {
       final convoId =
           await chatService.getOrCreateConversation('uid1', 'uid2');
 
-      await chatService.sendMessage(
+      final messageId = await chatService.sendMessage(
         conversationId: convoId,
         senderId: 'uid1',
         text: 'Hello!',
@@ -47,6 +48,7 @@ void main() {
           .collection('messages')
           .get();
       expect(messages.docs, hasLength(1));
+      expect(messages.docs.first.id, messageId);
 
       final data = messages.docs.first.data();
       expect(data['text'], 'Hello!');
@@ -139,6 +141,12 @@ void main() {
       for (final doc in msgs.docs) {
         expect(doc.data()['status'], 'read');
       }
+
+      final convoDoc = await fakeFirestore
+          .collection('conversations')
+          .doc(convoId)
+          .get();
+      expect(convoDoc.data()!['unreadCounts']['uid2'], 0);
     });
   });
 }
